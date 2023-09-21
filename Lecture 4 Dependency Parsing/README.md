@@ -53,7 +53,7 @@ Transition(biến chuyển) -Based Dependency Parsing  dựa trên state machine
     * RIGHT-ARC:   Thêm một arc $(w_i,r,w_j)$ vào tập $A$ trong đó $w_i$ là từ thứ hai từ trên xuống của stack và $w_j$ là từ đầu tiên của stack.. Xóa $w_j$ khỏi stack
 
 
-![Alt text](image.png)
+    * ![Alt text](/image/image.png)
 
 * Example:
     * <b>Input</b>: $S = $ "Book me the morning flight" 
@@ -73,21 +73,21 @@ Transition(biến chuyển) -Based Dependency Parsing  dựa trên state machine
 
 #### 1.4 Neural Dependency Parsing 
 
-Mặc dù có nhiều mô hình DL để phân tính dependency parsers nhưng mô hình này tập trung cụ thể vào các trình phân tích neural dependency parsers dựa trên quá trình transition. Loại mô hình này đã chứng minh hiệu suất tương đương và hiệu quả tốt hơn đáng kể so với mô hình tranditional-based discriminative dependency parsers. Sự khác biệt chính so với mô hình trước đó là Dense và Sparse 
+* Mặc dù có nhiều mô hình DL để phân tính dependency parsers nhưng mô hình này tập trung cụ thể vào các trình phân tích neural dependency parsers dựa trên quá trình transition. Loại mô hình này đã chứng minh hiệu suất tương đương và hiệu quả tốt hơn đáng kể so với mô hình tranditional-based discriminative dependency parsers. Sự khác biệt chính so với mô hình trước đó là Dense và Sparse 
 
-Mục đích của model là dự đoán trình tự transition từ state ban đầu đến state cuối cùng. 
+* Mục đích của model là dự đoán trình tự transition từ state ban đầu đến state cuối cùng. 
 Tức là có cấu hình của state $c = (\sigma,\beta,A) $ chúng ta sẽ dự đoán $T \in (SHIFT, LEFT-arc, RIGHT- arc)$ 
 
-* Lựa chọn tính năng đầu vào(feature selection):
+* <b>Lựa chọn tính năng đầu vào(feature selection)</b>:
     * $S_{word}$ = Vector biểu diễn của từ của một vài từ ở đầu của stack và buffer và 
 
     * $S_{tag}$ = POS tag của cho các từ trong $S_{word}$ - Ví dụ = like = động từ(verb), word = danh từ (n) 
 
     * $S_{label}$ là các nhãn arc tương ứng của các từ - Ví dụ : aux, conj, nmod, ... 
 
-![Alt text](image-3.png)
+    * ![Alt text](/image/image-2.png)
 
-* FeedForward Neural Network: 
+* <b>FeedForward Neural Network</b>: 
 
     * Các feature $[x^w, x^t, x^l]$ sẽ được nhân với các ma trận trọng số $[W^w, W^t, W^l]$ tương ứng. 
-    * ![Alt text](image-2.png)
+    * ![Alt text](/image/image-3.png)
