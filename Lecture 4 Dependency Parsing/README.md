@@ -54,3 +54,40 @@ Transition(biến chuyển) -Based Dependency Parsing  dựa trên state machine
 
 
 ![Alt text](image.png)
+
+* Example:
+    * <b>Input</b>: $S = $ "Book me the morning flight" 
+    * <b>Label</b>: SHIFT, LEFT-ARC, SHIFT, SHIFT, SHIFT 
+    * State 1:
+        * buffer: book|me|the|morning|flight
+        * stack: ROOT 
+    * State 2: 
+        * buffer: me|the|morning|flight 
+        * stack: book|ROOT 
+    * State 3: 
+        * buffer: me|the|morning|flight 
+        * stack: ROOT 
+        * A: ROOT -> book
+
+    => Cứ thế đến hết thì được một tập A đó là dependency-tree
+
+#### 1.4 Neural Dependency Parsing 
+
+Mặc dù có nhiều mô hình DL để phân tính dependency parsers nhưng mô hình này tập trung cụ thể vào các trình phân tích neural dependency parsers dựa trên quá trình transition. Loại mô hình này đã chứng minh hiệu suất tương đương và hiệu quả tốt hơn đáng kể so với mô hình tranditional-based discriminative dependency parsers. Sự khác biệt chính so với mô hình trước đó là Dense và Sparse 
+
+Mục đích của model là dự đoán trình tự transition từ state ban đầu đến state cuối cùng. 
+Tức là có cấu hình của state $c = (\sigma,\beta,A) $ chúng ta sẽ dự đoán $T \in (SHIFT, LEFT-arc, RIGHT- arc)$ 
+
+* Lựa chọn tính năng đầu vào(feature selection):
+    * $S_{word}$ = Vector biểu diễn của từ của một vài từ ở đầu của stack và buffer và 
+
+    * $S_{tag}$ = POS tag của cho các từ trong $S_{word}$ - Ví dụ = like = động từ(verb), word = danh từ (n) 
+
+    * $S_{label}$ là các nhãn arc tương ứng của các từ - Ví dụ : aux, conj, nmod, ... 
+
+![Alt text](image-3.png)
+
+* FeedForward Neural Network: 
+
+    * Các feature $[x^w, x^t, x^l]$ sẽ được nhân với các ma trận trọng số $[W^w, W^t, W^l]$ tương ứng. 
+    * ![Alt text](image-2.png)
