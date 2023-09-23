@@ -53,7 +53,7 @@ Transition(biến chuyển) -Based Dependency Parsing  dựa trên state machine
     * RIGHT-ARC:   Thêm một arc $(w_i,r,w_j)$ vào tập $A$ trong đó $w_i$ là từ thứ hai từ trên xuống của stack và $w_j$ là từ đầu tiên của stack.. Xóa $w_j$ khỏi stack
 
 
-    * ![Alt text](/image/image.png)
+    * ![Alt text](https://github.com/Kiem-cmd/cs224n-NLP/blob/main/Lecture%204%20Dependency%20Parsing/image/image.png?raw=True)
 
 * Example:
     * <b>Input</b>: $S = $ "Book me the morning flight" 
@@ -85,9 +85,9 @@ Tức là có cấu hình của state $c = (\sigma,\beta,A) $ chúng ta sẽ d�
 
     * $S_{label}$ là các nhãn arc tương ứng của các từ - Ví dụ : aux, conj, nmod, ... 
 
-    * ![Alt text](/image/image-2.png)
+    * ![Alt text](https://github.com/Kiem-cmd/cs224n-NLP/blob/main/Lecture%204%20Dependency%20Parsing/image/image-2.png?raw=True)
 
 * <b>FeedForward Neural Network</b>: 
 
     * Các feature $[x^w, x^t, x^l]$ sẽ được nhân với các ma trận trọng số $[W^w, W^t, W^l]$ tương ứng. 
-    * ![Alt text](/image/image-3.png)
+    * ![Alt text](https://github.com/Kiem-cmd/cs224n-NLP/blob/main/Lecture%204%20Dependency%20Parsing/image/image-3.png?raw=True)
