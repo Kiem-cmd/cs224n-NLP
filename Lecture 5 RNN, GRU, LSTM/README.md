@@ -123,6 +123,30 @@ $$J(\theta) = \sum_{j=1}^{|V|}y_j*log(\hat{y}_j)$$
 
 #### 2.6 Application RNN Translation Model 
 
+* Các model truyền thống khá phức tạp, phần này chúng sẽ thảo luận về khả năng của RNN trong việc thay thế các model đó trong bài toán Machine Translate. 
+
+* Ta có phương trình thể hiện hai quá trình encoder và decoder như sau: 
+
+$$h_t = \phi(h_{t-1},x_t) = f(W^{(hh)}h_{t-1} + W^{(hx)}x_t$$ 
+
+$$h_t = \phi(h_{t-1}) = f(W^{(hh)}h_{t-1})$$
+
+$$y_t = softmax(W^{(s)}h_t)$$
+
+* Tuy nhiên chỉ như này kết hợp với hàm loss Cross-Entropy thì khó có thể cho hiệu suất dịch chính xác được. 
+
+* Sau đây là một vài extention giúp cả thiện bài toán machine translate 
+
+    * Sử dụng $W^{()}$ - weight khác nhau cho 2 quá trình en và de 
+    * Tính hidden state ở decoder sử dụng 3 inputs khác nhau 
+        
+        * hidden state trước đó 
+        * Hidden state cuối cùng của encoder 
+        * Output trước đó - $\hat{y}^{t-1}$ 
+    
+    * Sử dụng multi-layer RNN 
+    * Sử dụng Bi-directional encoder
+    * Xáo trộn thứ tự các từ đầu vào
 ### 3. Gated Recurrent Unit (GRU) 
 
 
