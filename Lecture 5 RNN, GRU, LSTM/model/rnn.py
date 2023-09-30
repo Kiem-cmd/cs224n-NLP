@@ -1,23 +1,27 @@
 import numpy as np
-from lincoln.utils.np_utils import assert_same_shape 
+# from lincoln.utils.np_utils import assert_same_shape 
 
 class RNN_Node:
     def __init__(self):
         pass 
 
     def forward(self, 
-                x: ndarray, 
-                h: ndarray,
-                params_dict: Dict[str,ndarray]): 
+                x,
+                h,
+                params_dict): 
         """
 
         Args: 
-            x: ndarray - shape = (B,embed_dim)
+            x: ndarray - shape = (B,input_dim)
                 word - embeding out 
             h: ndarray - shape = (B,hidden_dim)
                 hidden state
             params_dict: Dict 
-                W_hh,W_hx,Ws,bx,by 
+                Whh - shape = (hidden_dim,hidden_dim)
+                Whx - shape = (input_dim,hidden_dim)
+                Ws  - shape = (hidden_dim,output_dim)
+                bx  - shape = (B,hidden_dim)
+                by  - shape = (B,hidden_dim)
         Return: 
             out: ndarray - shape(B,output_dim)
                 output of rnn node
@@ -25,22 +29,19 @@ class RNN_Node:
                 hidden state new
 
         """ 
-
-
         self.x = x 
         self.h = h 
 
-
-        self.z = np.dot(params_dict['W_hh']['value'],self.h.T) + np.dot(params_dict['W_hx']['value'],self.x.T) + params_dict['bx']['value']
+        self.z = np.dot(self.h,params_dict['Whh']['value']) + np.dot(self.x,params_dict['Whx']['value']) + params_dict['bx']['value']
         self.h_t = np.tanh(self.z)
-        self.out = np.dot(params_dict['W_s']['value'],self.h_t.T) + params_dict['by']['value'] 
-
+        self.out = np.dot(self.h_t,params_dict['Ws']['value']) + params_dict['by']['value'] 
+        
         return self.out,self.h_t 
          
     def backward(self,
-                d_out : ndarray,
-                d_h   : ndarray,
-                params_dict: Dict[str,ndarray]): 
+                d_out,
+                d_h,
+                params_dict): 
         """
 
         Args: 
@@ -61,62 +62,176 @@ class RNN_Node:
                 hidden state new
 
         """ 
-        ## Check shape
-        assert_same_shape(d_out,self.out)
-        assert_same_shape(d_h,self.h) 
-
-
         params_dict['by']['grad'] += d_out.sum(axis = 0)
-        params_dict['Ws']['grad'] += np.dot(self.h_t.T,d_out) ## (hidden,b) * (b,ouput_dim)
+        params_dict['Ws']['grad'] += np.dot(self.h_t.T,d_out) 
         
-        d_ws = np.dot(self.h_t,d_out)                        ## (hidden,b) * (b,output_dim)  
-        d_ht = np.dot(d_out,params_dict['W_s']['value'].T)     ## (b,output) * (hidden,output).T
+        d_ht = np.dot(d_out,params_dict['Ws']['value'].T)    
+        d_ht += d_h
+        dz = d_ht * (1-np.tanh(self.z)*np.tanh(self.z))    
 
-        dz = np.dot(d_ht,1-np.tanh(self.z)*np.tanh(self.z))    
+        params_dict['bx']['grad'] +=  dz.sum(axis = 0)
+        params_dict['Whh']['grad'] += np.dot(self.h.T,dz) 
+        params_dict['Whx']['grad'] += np.dot(self.x.T,dz)         
 
-        d_bx =  dz.sum(axis = 0)
-        d_Whh = np.dot(dz.T,self.h)  ### hidden * hidden
-        d_Whx = np.dot(dz,self.x)          ### hidden * 
-        d_x = bp.dot()
-
+        dx = np.dot(dz,params_dict['Whx']['value'].T)
+        dh = np.dot(dz,params_dict['Whh']['value'].T)
         
 
-        return 0
+        return dx,h,params_dict
 
 class Rnn_Layer:
-    def __init__(num_layer,input_dim,hidden_dim,output_dim): 
+    def __init__(self, 
+                hidden_dim,
+                output_dim,
+                weight_scale = None): 
         """ 
+        Args: 
+        hidden_dim: int 
+
+        output_dim: int 
+
         """ 
-        self.num_layer = num_layer
-        self.input_dim = input_dim 
+
         self.hidden_dim = hidden_dim 
-        self.output_dim = output_dim 
-    def init(self):
-        self.h = np.zeros(self.hidden_layer,1)
+        self.output_dim = output_dim
+        self.weight_scale = weight_scale
+        self.h0 = np.zeros((1,hidden_dim))
+        self.first = True 
+    def init(self, 
+            input_):
         
-        self.W_hx = np.random.rand(self.hidden_dim,self.input_dim) 
-        self.W_hh = np.random.rand(self.hidden_dim,self.hidden_dim) 
-        self.W_out = np.random.rand(self.output_dim,self.hidden_dim) 
+        """
+        Args: 
+            input_ : ndarray 
+                shape(input_) = (B,Seq_len,Vocab_size)
+        """
+        self.input_dim = input_.shape[2]
+        if not self.weight_scale: 
+            self.weight_scale = 2/(self.input_dim + self.output_dim)
+
+        self.params = {}
+        self.params['Ws'] = {} 
+        self.params['Whh'] = {} 
+        self.params['Whx'] = {} 
+        self.params['bx'] = {} 
+        self.params['by'] = {} 
 
 
-    def forward(self,inputs):
-        self.init() 
-        for i in range(len(inputs)):
-            h_t = np.tanh(W_hh*self.h + W_hx * inputs[i] + self.bx) 
-            y = np.softmax(self.Ws*h + self.by)
+        self.params['Ws']['value'] = np.random.normal(loc = 0.0,
+                                                      scale = self.weight_scale,
+                                                      size = (self.hidden_dim,self.output_dim)) 
+        self.params['Whh']['value'] = np.random.normal(loc = 0.0,
+                                                     scale = self.weight_scale,
+                                                     size = (self.hidden_dim,self.hidden_dim))
 
-        return y 
-    
-    def backward(self): 
+        self.params['Whx']['value'] = np.random.normal(loc = 0.0,
+                                                     scale = self.weight_scale,
+                                                     size = (self.input_dim,self.hidden_dim)) 
+        self.params['bx']['value'] = np.random.normal(loc = 0.0,
+                                                     scale = self.weight_scale,
+                                                     size = (1,self.hidden_dim)) 
+        self.params['by']['value'] = np.random.normal(loc = 0.0,
+                                                    scale = self.weight_scale,
+                                                    size = (1,self.output_dim)) 
+
+        self.params['Ws']['grad'] = np.zeros_like(self.params['Ws']['value'])
+        self.params['Whh']['grad'] = np.zeros_like(self.params['Whh']['value'])
+        self.params['Whx']['grad'] = np.zeros_like(self.params['Whx']['value'])
+        self.params['bx']['grad'] = np.zeros_like(self.params['bx']['value'])
+        self.params['by']['grad'] = np.zeros_like(self.params['by']['value'])
+
+        self.cells = [RNN_Node() for x in range(input_.shape[1])] 
+
+    def clear_gradient(self):
+        for i in self.params.keys():
+            self.params[i]['grad'] = np.zeros_like(self.params[i]['value'])
+
+    def forward(self,
+                x_seq):
+        """
+        Args: 
+            x_seq: ndarray 
+            ..................
+        Return: 
+
         """ 
-        Loss = y.log(y_hat) --> dL/d(y_hat) = 1/
+        if self.first: 
+            self.init(x_seq) 
+            self.first  = False  
+        batch_size, seq_len, input_dim = x_seq.shape         
+        h_in = np.copy(self.h0) 
+        h_in = np.repeat(h_in,batch_size,axis = 0)
+        x_out = np.zeros((batch_size,seq_len,self.output_dim))
+        for t in range(seq_len):
+            x_in = x_seq[:,t,:]
+            out,h = self.cells[t].forward(x_in,h_in,self.params) 
+            x_out[:,t,:] = out 
 
-        dL/dWs = h(y_hat - y) 
-        dL/dh = Ws(y_hat - y) 
-        dL/dby = 
+        self.h0 = h_in.mean(axis = 0, keepdims = True)
 
-        dh/d(Whh) = 
-        dh/d(Whx) = 
-        dh/d(bx)
+        return x_out
     
+    def backward(self,
+                x_seq_out_grad): 
         """ 
+        Args: 
+        x_out_grad :  array
+            shape - (B,seq_len,output_dim)
+        """ 
+
+        batch_size,seq_len,output_dim = x_seq_out_grad.shape 
+        h_in_grad = np.zeros((batch_size,self.hidden_dim))
+        x_seq_in_grad = np.zeros((batch_size,seq_len,self.input_dim)) 
+
+        for t in reversed(range(seq_len)):
+            x_out_grad = x_seq_out_grad[:,t,:] 
+            grad_out, h_in_grad = self.cells[t].backward(x_out_grad,h_in_grad,self.params) 
+            x_seq_in_grad[:,t,:] = grad_out 
+        return x_seq_in_grad
+
+
+class RNNModel():
+    def __init__(self,
+                layer,
+                sequence_length,
+                vocab_size,
+                loss): 
+        """ 
+        Args: 
+        ---------------------------
+        layer: RNN_Layer
+        ................
+        sequen_lenth: int 
+        .................
+        vocab_size: int 
+        .................
+        loss : Loss
+        .................
+
+        """ 
+
+        self.layers = layers 
+        self.vocab_size = vocab_size 
+        self.sequence_length = sequence_length 
+        self.loss = loss 
+        for layer in self.layers:
+            pass 
+
+    def forward(self,x_batch):
+        """
+
+
+        """
+
+        for layer in self.layers:
+            x_batch = layer.forward(x_batch) 
+        return x_batch
+    def backward(self,
+                 loss_grad):
+
+        """  
+
+        """
+        for layer in reversed(self.layers):
+            loss_grad = layer.backward(loss_grad)
+        return loss_grad
