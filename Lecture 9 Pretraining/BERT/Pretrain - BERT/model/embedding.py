@@ -13,11 +13,10 @@ class Token(nn.Module):
 class Segment(nn.Module):
     def __init__(self,n_segment,d_model):
         super().__init__()
-        self.seg = nn.Embedding(n_segment,d_model,padding_idx=0)
+        self.seg = nn.Embedding(n_segment,d_model ,padding_idx=0)
     def forward(self,x):
         output = self.seg(x)
         return output
-
 
 class Position(nn.Module):
     def __init__(self,max_len,d_model):
@@ -35,20 +34,29 @@ class Position(nn.Module):
         self.register_buffer('pe',pe)
     def forward(self,x):
         return self.pe[:,:x.size(1)]
-
 class BertEmb(nn.Module):
-    def __init__(self,vocab_size,n_segment,d_model,max_len,dropout = 0.1):
+    def __init__(self,vocab_size,n_segment,d_model,max_len,drop = 0.1):
         super().__init__()
-        self.pe = Position(max_len=max_len,d_model = d_model) 
-        self.segment = Segment(n_segment=n_segment,d_model=d_model) 
-        self.token = Token(vocab_size=vocab_size,d_model = d_model) 
-        self.dropout = nn.Dropout(dropout)
+        self.pe = Position(max_len,d_model) 
+        self.segment = Segment(n_segment,d_model) 
+        self.token = Token(vocab_size,d_model) 
+        self.dropout = nn.Dropout(drop)
 
-    def forward(self,x):
+    def forward(self,x,seg):
         pe = self.pe(x)
-        seg = self.segment(x) 
+        seg = self.segment(seg) 
         token = self.token(x) 
 
         output = pe + seg + token 
         return self.dropout(output)
+
+if __name__ == '__main__':
+    max_len = 20 
+    vocab_size = 1000 
+    d_model = 100 
+    n_segment = 3
     
+    bert_emb = BertEmb(vocab_size,n_segment,d_model,max_len)
+    seq = torch.randint(0,100,(10,max_len))
+    seg = torch.randint(0,3,(10,max_len))
+    print(bert_emb(seq,seg).size())
