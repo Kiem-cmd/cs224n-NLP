@@ -4,6 +4,8 @@ import torch.nn.funtional as F
 from char_embed import CharEmb 
 from word_embed import WordEmb 
 from high_way import HighWay
+
+
 class BiDAF(nn.Module):
     def __init__(self,args):
         super().__init__() 
@@ -15,8 +17,8 @@ class BiDAF(nn.Module):
         self.high_way = HighWay(args) 
         
         ## 4. Contextual embedding layer
-        self.context_layer = nn.LSTM(input_size = args.hidden_size * 2,
-                                    hidden_size = args.hidden_size,
+        self.context_layer = nn.LSTM(input_size = args.hidden_size,
+                                    hidden_size = args.hidden_size/2,
                                     bidirection = True,
                                     batch_first = True,
                                     drop_rate = args.drop_rate
@@ -31,10 +33,10 @@ class BiDAF(nn.Module):
         self.modeling_layer2 = nn.LSTM() 
         ## 7. Output layer
         
-    def build_contextual_emb(self,concate_char_word):
-        contextual_embed, _h = self.context_layer(concate_char_word) 
-        return contextual_embed
-    def attn_flow_layer(self,H,U):
+    def build_contextual_emb(self,emb):
+        out, _ = self.contextual_emb_layer(emb)
+        return out
+    def attn_flow_layer(self,c,q):
         """
         Params: 
         
@@ -52,7 +54,7 @@ class BiDAF(nn.Module):
             ci = 
             cq.append(ci)
         HoU = torch.stack(HoU, dim = -1) 
-        
+        S = torch.cat()
         S = self.attn_weight_context(H) + self.attn_weight_query(U) + HoU
         U_hat = torch.bmm(a,q)
         
@@ -65,35 +67,62 @@ class BiDAF(nn.Module):
     def output_layer(self,g,m):
         return p1,p2
     def forward(self,batch): 
-        ### Stage 1: 
-        context_char = batch.context_char 
-        query_char = batch.query_char 
-        context_word = batch.context_word
-        query_word = batch.query_word 
-        ### Stage 2: 
-        context_emb = build_contextual_emb(context_char,context_word)
-        query_emb = build_contextual_emb(query_char,query_word)
-        ### Stage 3: 
+        ### Stage 1: char_emb & word_emb 
         
-        context_emb = self.context
+        context_char = batch.context_char   ##  
+        context_word = batch.context_word   ## 
         
-        similar = torch.mul(context_emb,query_emb) 
-        cat_data = torch.cat((context_emb,query_emb,similar),3)
+        query_char = batch.query_char       ##
+        query_word = batch.query_word       ##   
         
-        S = self.W(cat_data).view()
+        ### Stage 2: highway network 
+        context_emb = torch.cat((context_char,context_word),2)
+        query_emb = torch.cat((query_char,query_word),2)
+        
+        context_emb = self.highway(context_emb) 
+        query_emb = self.highway(query_emb)
+        ### Stage 3: Build contextual emb
+
+        context_emb = build_contextual_emb(context_emb)
+        query_emb = build_contextual_emb(query_emb)
+        
+        ### Stage 4: Calculate S & G 
+        
+        shape = (batch_size,T,J,2*self.d)
+        
+        context_emb_ex = context_emb.unsqueeze(2)
+        context_emb_ex = context_emb.ex.expand(shape)
+        
+        query_emb_ex = context_emb.unsqueeze(2)
+        query_emb_ex = context_emb_ex.expand(shape) 
+       
+        elwise_mul = torch.mul((context_emb_ex,query_emb_ex),3)
+        concate = torch.cat((context_emb_ex,query_emb_ex,elwise_mul),3) 
+        S = self.W(concate).squeeze(3)
+        
+        
         ## Context -> Query
-        c2q = torch. 
+        c2q = torch.bmm(F.softmax(S,dim= - 1), query_emb)  
+        
         ## Query -> Context
-        q2c = torch. 
+        b = F.softmax(torch.max(S,2)[0],dim  = -1))
+        q2c = torch.bmm(b.unsqueeze(1),context_emb).squeeze()
+        q2c = q2c.unsqueeze(1).expand(-1, T, -1)
         ## query-aware representation for each context word
-        G = torch.cat((context))
+        G = torch.cat([context_emb,c2q,c * c2q,c*q2c], dim = -1)
+  
+        ### Stage 5: Modeling layer  
         
-        ### Stage 4: 
-        
+        ### Stage 6: Output layer 
         p1,p2 = output_layer (g,m,c_lens)
         
         return p1,p2 
         
         
-
+def main():
+    
+    
+    
+if __name__ == '__main__':
+    main()
         

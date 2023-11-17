@@ -1,23 +1,26 @@
 import torch 
-import torch.nn
-import torch.nn.function as F 
+import torch.nn as nn
+import torch.nn.functional as F 
+import argparse
 
-class HighWay(nn.Module);
+class HighWay(nn.Module):
     def __init__(self,args,act_func = nn.ReLU()):
         super().__init__()
         self.input_dim = args.hidden_size
-        self.num_layer = args.num_layer
+        self.num_layers = args.num_layers
+        self.act_func = act_func
         
         self.linear = nn.ModuleList([
-            nn.Linear(input_dim,input_dim) 
-            for _ in range(num_layers)
+            nn.Linear(self.input_dim,self.input_dim) 
+            for _ in range(self.num_layers)
         ]) 
         self.gate = nn.ModuleList([
-            nn.Linear(input_dim,input_dim) 
-            for _ in range(num_layers)
+            nn.Linear(self.input_dim,self.input_dim) 
+            for _ in range(self.num_layers)
         ])
  
     def forward(self,x):
+        assert x.size(-1) == self.input_dim, "word+char ko =  hidden size"
         for layer in range(self.num_layers):
             linear = self.linear[layer](x)
             linear = self.act_func(linear)
@@ -26,3 +29,24 @@ class HighWay(nn.Module);
             
             x = gate * linear + (1-gate) * x
         return x
+
+def main():
+
+    parser = argparse.ArgumentParser() 
+    parser.add_argument('--hidden-size',default = 20 ,type = int)
+    parser.add_argument('--num_layers',default = 2,type = int ) 
+    args = parser.parse_args() 
+
+    x = torch.rand(2,10,20)
+    high_way = HighWay(args) 
+    print(high_way(x).shape)
+
+
+if __name__ == '__main__':
+    main() 
+
+
+
+
+
+
