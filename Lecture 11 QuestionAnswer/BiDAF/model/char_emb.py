@@ -2,7 +2,6 @@ import argparse
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F
-import time
 class CharEmb(nn.Module):
     def __init__(self,args,drop_rate = 0.2):
         super().__init__()
@@ -34,7 +33,7 @@ class CharEmb(nn.Module):
         
         return x
 
-def main():
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--char_vocab_size',default= 300,type = int)
     parser.add_argument('--char_dim',default = 20,type = int)
@@ -44,6 +43,3 @@ def main():
     char_emb = CharEmb(args,drop_rate= 0.3)
     x = torch.randint(20,200,(10,10,10))
     print(char_emb(x).shape)
-
-if __name__ == '__main__':
-    main()

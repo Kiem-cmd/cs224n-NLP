@@ -30,8 +30,9 @@ class HighWay(nn.Module):
             x = gate * linear + (1-gate) * x
         return x
 
-def main():
 
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser() 
     parser.add_argument('--hidden-size',default = 20 ,type = int)
     parser.add_argument('--num_layers',default = 2,type = int ) 
@@ -40,10 +41,6 @@ def main():
     x = torch.rand(2,10,20)
     high_way = HighWay(args) 
     print(high_way(x).shape)
-
-
-if __name__ == '__main__':
-    main() 
 
 
 
