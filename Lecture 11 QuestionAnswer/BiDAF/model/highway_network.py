@@ -20,7 +20,7 @@ class HighWay(nn.Module):
         ])
  
     def forward(self,x):
-        assert x.size(-1) == self.input_dim, "word+char ko =  hidden size"
+        assert x.size(-1) == self.input_dim, "word_dim + char_channel_size ko =  hidden size"
         for layer in range(self.num_layers):
             linear = self.linear[layer](x)
             linear = self.act_func(linear)
@@ -29,8 +29,6 @@ class HighWay(nn.Module):
             
             x = gate * linear + (1-gate) * x
         return x
-
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser() 
