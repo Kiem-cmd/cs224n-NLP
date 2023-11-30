@@ -1,14 +1,144 @@
 import json 
 import os 
 import nltk 
+import pandas as pd 
 import torch 
+import time 
 from tqdm import tqdm
 from torchtext import data 
-from torchtext import datasets 
-from torchtext.vocab import GloVe 
+from torchtext import datasets
+from torchtext.vocab import vocab 
+from collections import Counter,OrderedDict
 from torch.utils.data import Dataset 
+import spacy 
+nlp = spacy.load('en') 
 
-import matplotlib.pyplot as plt 
+
+
+"""
+Data file json: 
+article: 
+|--- title 
+|--- paragraphs
+       |--- context 
+       |--- qas 
+            | -- question 
+            | -- id 
+            | -- answers 
+                    |--- anwser_start 
+                    |--- text
+
+..... 
+
+|--- paragraphs: 
+        |--- 
+        |---
+
+
+
+"""
+def parser_data(data):
+    '''
+    
+    
+    '''
+    print("Parsering from json to DataFrame ............")
+    start = time.time()
+    data = data['data'] 
+    qa_list = [] 
+    for paragraphs in data:
+        for para in paragraphs['paragraphs']:
+            context = para['context'] 
+            for qa in para['qas']:
+                id = qa['id'] 
+                question = qa['question']
+                for ans in qa['answers']:
+                    answer = ans['text']
+                    ans_start = ans['answer_start']
+                    ans_end = ans_start + len(answer)
+
+                    qa_dict = dict() 
+                    qa_dict['id'] = id 
+                    qa_dict['context'] = context
+                    qa_dict['question'] = question
+                    qa_dict['answer'] = answer 
+                    qa_dict['ans_start'] = ans_start 
+                    qa_dict['ans_end'] = ans_end 
+                    qa_list.append(qa_dict) 
+    end = time.time() 
+    print("Number of Q/A: ",len(qa_list))
+    print(f"Parser data from json to DataFrame in {end- start}s")
+    print("--------------------------------------------------------------------")
+    return pd.DataFrame(qa_list) 
+
+
+def text2vocab(data):
+    ''' 
+    
+    
+    
+    '''
+    print("Building text vocab ...............")
+    text = [] 
+    total = 0 
+    start = time.time()
+    for paragraphs in data:
+        context_unique = list(paragraphs.context.unique())
+        question_unique = list(paragraphs.question.unique()) 
+        text.extend(context_unique)
+        text.extend(question_unique) 
+    print("Sum of context + question: ",len(text)) 
+    end = time.time()
+    print(f"Build text vocab in {end-start}s")
+    print("-------------------------------------------------------------------")
+    return text 
+
+def build_word_vocab(vocab_text):
+    '''
+    
+    
+    '''
+    print("Building word vocab ..................")
+    start = time.time()
+    words = [] 
+    for sequence in vocab_text: 
+        for word in nlp(sequence,disable=['parser','tagger','ner']):
+            words.append(word.text)
+    word_counter = Counter(words) 
+    sorted_by_freq = sorted(word_counter.item(), key = lambda x:x[1],reverse=True)
+    ordered_dict = OrderedDict(sorted_by_freq)
+    vocab_ = vocab(ordered_dict,specials=['<unk>'])
+    vocab_.set_default_index(vocab_['<unk>'])
+    end = time.time() 
+    print(f"Build word vocab in: {end - start}s")
+    print("-------------------------------------------------------------------")
+    return vocab_
+
+def build_char_vocab(vocab_text):
+    '''
+    
+    
+    
+    '''
+    print('Building char vocab ................')
+    start = time.time()
+    chars = [] 
+    for sequence in vocab_text: 
+        for char in sequence: 
+            chars.append(char) 
+    char_counter = Counter(chars) 
+    sorted_by_freq = sorted(char_counter,key = lambda x: x[1], reverse= True) 
+    ordered_dict = OrderedDict(sorted_by_freq) 
+    vocab_ = vocab(ordered_dict,specials=['<unk>'])
+    vocab_.set_default_index(vocab_['<unk>'])
+    end = time.time() 
+    print('Build char vocab in ',end - start)
+    return vocab_ 
+
+
+
+
+
 
 def word_token(text):
     return [token.replace("''", '"').replace("``", '"') for token in nltk.word_tokenize(text)]
