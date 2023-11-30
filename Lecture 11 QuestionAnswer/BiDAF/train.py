@@ -1,9 +1,39 @@
 import argparse 
 import torch 
-import torch.nn as nn 
+import time
+import torch.optim as optim
+from torch.autograd import Variable
+import torch.nn as nn
+from data.dataloader import Squad
+from model.bidaf import BiDAF
 
-def train(args,data):
+def train(args,dataloader):
     device = torch.device("cuda" if torch.cuda.is_available() else 'gpu') 
+    model = BiDAF().to(device) 
+    parameters = filter(lambda x: x.requires_grad, model.parameters())
+
+
+    optimizer = optim.Adadelta(parameters,lr = args.learning_rate) 
+
+    print("Starting trainning .....")
+    start = time.time()
+
+    model.train() 
+    
+    for i,batch in enumerate(dataloader):
+        optimizer.zero_grad() 
+        if epochs % 10 ==0:
+            print("")
+        context_word,question_word,context_char,quesion_char,label = batch 
+        context_word,question_word,context_char,question_char = context_word.to(device),question_word.to(device),context_char.to(device),quesion_char.to(device)
+        predict = model(context_word,context_char,question_word,quesion_char)
+        start_predict, end_predict = predict
+        start = label[:,0]
+        end = label[:,1]
+        loss = F.cross_entropy(start_predict,start) + F.cross_entropy(end_predict,end)
+        loss.backward()
+        optimizer.step()
+
     model = BiDaf(args, data.WORD.vocab.vectors).to(device) 
     
 def main():
